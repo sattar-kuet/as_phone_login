@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="fields" name="fields_extend" inherit_id="auth_signup.fields">
+        <xpath expr="//div[hasclass('field-login')]" position="after">
+            <div class="form-group field-phone">
+                <label for="phone">Your Phone</label>
+                <input type="text" name="phone" t-att-value="phone" id="phone" class="form-control form-control-sm" autofocus="autofocus"
+                    autocapitalize="off" required="required" t-att-readonly="'readonly' if only_passwords else None"/>
+            </div>
+            <div class="form-group field-company_id">
+                <label for="company_id">Business/Brand Name</label>
+                <input type="text" name="company_id" t-att-value="company_id" id="company_id" class="form-control form-control-sm" autofocus="autofocus"
+                    autocapitalize="off" required="required" t-att-readonly="'readonly' if only_passwords else None"/>
+            </div>
+            <field name="company_ids" invisible="1"/>
+        </xpath>
+    </template>
+
+    <template id="login_extend" name="Extend" inherit_id="web.login">
+        <xpath expr="//div[hasclass('field-login')]" position="replace">
+            <div class="form-group field-phone">
+                <label for="phone">Phone/Email</label>
+                <input type="text" placeholder="Phone/Email" name="phone" t-att-value="phone" id="phone" t-attf-class="form-control #{'form-control-sm' if form_small else ''}" required="required" autofocus="autofocus" autocapitalize="off"/>
+            </div>
+        </xpath>
+    </template>
+</odoo>

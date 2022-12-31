@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_users_form_as_phone" model="ir.ui.view">
+        <field name="name">res.users.view.form.inherit</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='login']" position="after">
+                <br/>
+                <label for="phone"/>
+                <br/>
+                <field name="phone" />
+                <br/>
+                <label for="company_id" string="Business/Brand Name"/>
+                <br/>
+                <field name="company_id" />
+            </xpath>
+        </field>
+    </record>
+</odoo>
