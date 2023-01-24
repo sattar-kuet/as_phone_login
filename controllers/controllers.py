@@ -8,34 +8,70 @@ from odoo.addons.auth_signup.models.res_users import SignupError
 from odoo.addons.web.controllers.main import ensure_db, Home, SIGN_UP_REQUEST_PARAMS
 from odoo.exceptions import UserError
 
-class AuthSignupHomeExtend(AuthSignupHome):
 
+"""
+Arif's comment:
+------------------------------
+There are some settings are needed to be changed from Settings menu of the application.
+
+As Admin after logging in go to,
+
+1. Settings > Customer Account > Default Access rights >>
+
+2. In the `Default Access rights` window (If it is 'archived' then 'unarchieve' it from top action menu)
+ => Access Rights > Allowed Companies > Select all the companies' where a merchant can be added from signup form. 
+
+Caution: Only in selected companies a merchant can be added from signup form. 
+Otherwise it will 'Could not create a new account.'
+"""
+
+
+class AuthSignupHomeExtend(AuthSignupHome):
     def _prepare_signup_values(self, qcontext):
-            res = super(AuthSignupHomeExtend, self)._prepare_signup_values(qcontext)
-            merchant_group = request.env['res.groups'].sudo().search([
-                ('name', '=', 'Courier Merchant')
-            ])
-            res.update({
-                'phone':qcontext.get("phone",""),
-                'sel_groups_1_9_10': 1,
-                'in_group_'+str(merchant_group.id): True
-            })
-            return res
+        res = super(AuthSignupHomeExtend, self)._prepare_signup_values(qcontext)
+        rider_group = request.env['res.groups'].sudo().search([
+            ('name', '=', 'Courier Rider')
+        ])
+        admin_group = request.env['res.groups'].sudo().search([
+            ('name', '=', 'Company Owner')
+        ])
+        merchant_group = request.env['res.groups'].sudo().search([
+            ('name', '=', 'Courier Merchant')
+        ])
+
+        res.update({
+            # Arif Added this code
+            # ---------------------------------------------------------------
+            'company_name': qcontext.get("company_name", ""),
+            # ---------------------------------------------------------------
+            'phone': qcontext.get("phone", ""),
+            'sel_groups_1_9_10': 1
+        })
+        return res
 
     def get_auth_signup_qcontext(self):
         res = super(AuthSignupHomeExtend, self).get_auth_signup_qcontext()
+        rider_group = request.env['res.groups'].sudo().search([
+            ('name', '=', 'Courier Rider')
+        ])
+        admin_group = request.env['res.groups'].sudo().search([
+            ('name', '=', 'Company Owner')
+        ])
         merchant_group = request.env['res.groups'].sudo().search([
             ('name', '=', 'Courier Merchant')
         ])
         res.update({
-            'phone': request.params.get('phone',''),
-            'sel_groups_1_9_10': 1,
-            'in_group_' + str(merchant_group.id): True
+            # Arif added this code
+            # -----------------------------------------------------
+            'company_name': request.params.get('company_name', ''),
+            # -----------------------------------------------------
+            'phone': request.params.get('phone', ''),
+            'sel_groups_1_9_10': 1
         })
         return res
 
-class HomeExtend(Home):
 
+class HomeExtend(Home):
     @http.route()
     def web_login(self, redirect=None, **kw):
         ensure_db()
@@ -124,12 +160,47 @@ class HomeExtend(Home):
         return url
 
     def _signup_with_values(self, token, values):
+
         if 'phone' in values.keys():
             phone_number = request.env['res.users'].sudo().search([('phone','=',values['phone'])])
             if len(phone_number):
                 raise UserError(_('Another user is already registered using this phone number.'))
             else:
                 db, login, password = request.env['res.users'].sudo().signup(values, token)
+                # Arif added this code
+                # -----------------------------------------------------
+                # Arif added this code
+                # -----------------------------------------------------
+                # raising error if this company already exists
+                if 'company_name' in values.keys():
+                    company_name = request.env['res.company'].sudo().search([('name', '=', values['company_name'])])
+                    if len(company_name):
+                        raise UserError(_('Company is already exists.'))
+                    else:
+                        # --------------------------------------------------
+                        # creating a partner
+                        partner_obj = request.env['res.partner'].sudo().create({
+                            'name': values['company_name'],
+                            'company_type': 'company'
+                        })
+                        # finding the currency
+                        currency_obj = request.env['res.currency'].sudo().search([
+                            ('name', '=', 'BDT'),
+                        ], limit=1)
+                        # --------------------------------------------------
+                        # creating company if company does not exist
+                        company_obj = request.env['res.company'].sudo().create({
+                            'name': values['company_name'],
+                            'partner_id': partner_obj.id if partner_obj else 1,
+                            'currency_id': currency_obj.id if currency_obj else 1
+                        })
+                # -----------------------------------------------------
+                # assigning the company to the user
+                user_obj = request.env['res.users'].sudo().search([('login', '=', login)], limit=1)
+                for user in user_obj:
+                    user.company_ids = [(4, company_obj.id)]
+                    user.company_id = company_obj.id
+                # -----------------------------------------------------
                 request.env.cr.commit()
                 uid = request.session.authenticate(db, login, password)
                 if not uid:
