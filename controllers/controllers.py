@@ -8,7 +8,6 @@ from odoo.addons.auth_signup.models.res_users import SignupError
 from odoo.addons.web.controllers.main import ensure_db, Home, SIGN_UP_REQUEST_PARAMS
 from odoo.exceptions import UserError
 
-
 """
 Arif's comment:
 ------------------------------
@@ -96,26 +95,22 @@ class HomeExtend(Home):
         if request.httprequest.method == 'POST':
             old_uid = request.uid
             try:
-                partner_obj = request.env['res.partner'].sudo().search([('phone','=',request.params['phone'])])
-                if len(partner_obj):
-                    login = partner_obj.user_ids[0].login
-                else:
-                    login = request.env['res.users'].sudo().search([('login', '=', request.params['phone'])]).login
+                login = request.params['phone']
+                user = request.env['res.users'].sudo().search([('phone', '=', request.params['phone'])])
+                if user:
+                    login = user.login
 
-                if login:
-                    uid = request.session.authenticate(request.session.db, login, request.params['password'])
-                    request.params['login_success'] = True
-                    if redirect != None:
-                        if len(redirect.strip()) == 0:
-                            url = self._redirect_loggedin_user()
-                            return request.redirect(url)
-                    return request.redirect(self._login_redirect(uid, redirect=redirect))
-                else:
-                    values['error'] = _("Wrong Email OR Phone OR password")
+                uid = request.session.authenticate(request.session.db, login, request.params['password'])
+                request.params['login_success'] = True
+                if redirect != None:
+                    if len(redirect.strip()) == 0:
+                        url = self._redirect_loggedin_user()
+                        return request.redirect(url)
+                return request.redirect(self._login_redirect(uid, redirect=redirect))
             except odoo.exceptions.AccessDenied as e:
                 request.uid = old_uid
                 if e.args == odoo.exceptions.AccessDenied().args:
-                    values['error'] = _("Wrong Phone/password")
+                    values['error'] = _("Wrong Email OR Phone OR password")
                 else:
                     values['SELF_READABLE_FIELDS'] = e.args[0]
         else:
@@ -138,7 +133,8 @@ class HomeExtend(Home):
             elif error == '2':
                 error = _("Access Denied")
             elif error == '3':
-                error = _("You do not have access to this database or your invitation has expired. Please ask for an invitation and be sure to follow the link in your invitation email.")
+                error = _(
+                    "You do not have access to this database or your invitation has expired. Please ask for an invitation and be sure to follow the link in your invitation email.")
             else:
                 error = None
 
@@ -162,7 +158,7 @@ class HomeExtend(Home):
     def _signup_with_values(self, token, values):
 
         if 'phone' in values.keys():
-            phone_number = request.env['res.users'].sudo().search([('phone','=',values['phone'])])
+            phone_number = request.env['res.users'].sudo().search([('phone', '=', values['phone'])])
             if len(phone_number):
                 raise UserError(_('Another user is already registered using this phone number.'))
             else:
