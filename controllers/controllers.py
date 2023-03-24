@@ -146,7 +146,7 @@ class HomeExtend(Home):
     def _redirect_loggedin_user(self):
         action_pickup_point_bank_id = request.env.ref('smart_courier.action_add_pickup_point_bank_merchant_wizard').id
         action_bank_id = request.env.ref('smart_courier.action_merchant_bank').id
-        action_dashboard_id = request.env.ref('smart_courier.action_dashboard').id
+        action_dashboard_id = request.env.ref('odoo_dynamic_dashboard.action_dynamic_dashboard').id
         url = f'/web#action={action_dashboard_id}'
         if request.env.user.has_group('smart_courier.group_courier_merchant'):
             if request.env['courier.merchant.pickup.points'].is_merchant_pickup_point_missing():
