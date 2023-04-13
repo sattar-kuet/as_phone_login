@@ -5,7 +5,7 @@
     'author': "My Company",
     'category': 'website',
     'version': '1.0',
-    'depends': [ 'auth_oauth', 'smart_courier','as_phone_login'],
+    'depends': [ 'auth_oauth'],
     'data': [
         'views/views.xml',
         'views/templates.xml',
